@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initSchema, run, get, all } from './db.js';
 
 const app = express();
@@ -153,6 +155,18 @@ app.get('/api/permissions/:permission', authenticate, async (req, res) => {
 
 async function start() {
   await initSchema();
+
+  // Serve static frontend build in production
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const distPath = path.join(__dirname, '..', 'dist');
+  if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      if (req.url.startsWith('/api')) return res.status(404).send('Not found');
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
   app.listen(PORT, () => {
     console.log(`TaskFlow server running on http://localhost:${PORT}`);
   });

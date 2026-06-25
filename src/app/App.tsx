@@ -1,4 +1,7 @@
 import { useState, useRef } from "react";
+import { useAuth } from "./lib/auth.tsx";
+import { Login } from "./components/Login.tsx";
+import { AdminUsers } from "./components/AdminUsers.tsx";
 import {
   LayoutDashboard, List, FileText, BarChart2, Users, Settings,
   Plus, Search, Bell, X, Send, Bug, Zap, CheckSquare, BookOpen,
@@ -14,7 +17,7 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type View = "board" | "backlog" | "wiki" | "reports" | "team";
+type View = "board" | "backlog" | "wiki" | "reports" | "team" | "settings";
 type Priority = "critical" | "high" | "medium" | "low";
 type IssueStatus = "todo" | "in-progress" | "in-review" | "done";
 type IssueType = "bug" | "feature" | "task" | "story";
@@ -899,17 +902,20 @@ function TeamView({ issues }: { issues: Issue[] }) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS: { id: View; label: string; Icon: React.FC<{ className?: string }> }[] = [
+const NAV_ITEMS: { id: View; label: string; Icon: React.FC<{ className?: string }>; permission?: string }[] = [
   { id: "board",   label: "Board",   Icon: LayoutDashboard },
-  { id: "backlog", label: "Backlog", Icon: List            },
+  { id: "backlog", label: "Backlog", Icon: List,            permission: "backlog" },
   { id: "wiki",    label: "Wiki",    Icon: FileText        },
-  { id: "reports", label: "Reports", Icon: BarChart2       },
+  { id: "reports", label: "Reports", Icon: BarChart2,       permission: "reports" },
   { id: "team",    label: "Team",    Icon: Users           },
 ];
 
 function Sidebar({ view, setView, darkMode, setDarkMode }: {
   view: View; setView: (v: View) => void; darkMode: boolean; setDarkMode: (d: boolean) => void;
 }) {
+  const { user, logout, hasPermission, isAdmin } = useAuth();
+  const visibleNav = NAV_ITEMS.filter((item) => !item.permission || hasPermission(item.permission));
+
   return (
     <div className="w-52 flex-shrink-0 flex flex-col h-full" style={{ backgroundColor: "#0f1b2d" }}>
       {/* Logo */}
@@ -925,7 +931,7 @@ function Sidebar({ view, setView, darkMode, setDarkMode }: {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ id, label, Icon }) => (
+        {visibleNav.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setView(id)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors ${
               view === id
@@ -937,13 +943,20 @@ function Sidebar({ view, setView, darkMode, setDarkMode }: {
           </button>
         ))}
 
-        <div className="pt-3 mt-2 border-t" style={{ borderColor: "#1e304a" }}>
-          <button
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm text-[#8899aa] hover:bg-white/5 hover:text-white transition-colors">
-            <Settings className="w-4 h-4 flex-shrink-0" />
-            Settings
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="pt-3 mt-2 border-t" style={{ borderColor: "#1e304a" }}>
+            <button
+              onClick={() => setView("settings")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors ${
+                view === "settings"
+                  ? "bg-blue-600/30 text-blue-300 font-medium"
+                  : "text-[#8899aa] hover:bg-white/5 hover:text-white"
+              }`}>
+              <Settings className="w-4 h-4 flex-shrink-0" />
+              Settings
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Footer */}
@@ -955,14 +968,19 @@ function Sidebar({ view, setView, darkMode, setDarkMode }: {
         </button>
         <div className="flex items-center gap-2 px-1 py-1">
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-mono text-[10px]"
-            style={{ backgroundColor: MEMBERS[0].color }}>
-            {MEMBERS[0].initials}
+            style={{ backgroundColor: "#6554C0" }}>
+            {user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-white truncate">{MEMBERS[0].name}</p>
-            <p className="text-[10px] text-[#8899aa] truncate">{MEMBERS[0].role}</p>
+            <p className="text-xs text-white truncate">{user?.name ?? "User"}</p>
+            <p className="text-[10px] text-[#8899aa] truncate">{user?.role_name ?? "Member"}</p>
           </div>
         </div>
+        <button
+          onClick={logout}
+          className="w-full text-left px-3 py-1.5 rounded text-xs text-[#8899aa] hover:bg-white/5 hover:text-white transition-colors">
+          Sign out
+        </button>
       </div>
     </div>
   );
@@ -971,7 +989,7 @@ function Sidebar({ view, setView, darkMode, setDarkMode }: {
 // ── Top Bar ───────────────────────────────────────────────────────────────────
 
 const VIEW_LABELS: Record<View, string> = {
-  board: "Board", backlog: "Backlog", wiki: "Wiki", reports: "Reports", team: "Team",
+  board: "Board", backlog: "Backlog", wiki: "Wiki", reports: "Reports", team: "Team", settings: "Settings",
 };
 
 function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void }) {
@@ -995,10 +1013,12 @@ function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void
           <Bell className="w-4 h-4" />
           <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
         </button>
-        <button onClick={onCreateIssue}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity font-medium">
-          <Plus className="w-3.5 h-3.5" /> Create
-        </button>
+        {view !== "settings" && (
+          <button onClick={onCreateIssue}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity font-medium">
+            <Plus className="w-3.5 h-3.5" /> Create
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1007,11 +1027,12 @@ function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const { user, loading } = useAuth();
   const [view, setView] = useState<View>("board");
   const [issues, setIssues] = useState<Issue[]>(INIT_ISSUES);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [createStatus, setCreateStatus] = useState<IssueStatus | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   const openCreate = (status?: IssueStatus) => setCreateStatus(status ?? "todo");
   const closeCreate = () => setCreateStatus(null);
@@ -1019,6 +1040,21 @@ export default function App() {
   const handleCreate = (issue: Issue) => {
     setIssues((prev) => [issue, ...prev]);
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
 
   return (
     <div className={`h-screen flex overflow-hidden ${darkMode ? "dark" : ""} bg-background`}
@@ -1033,6 +1069,7 @@ export default function App() {
           {view === "wiki"    && <WikiView />}
           {view === "reports" && <ReportsView  issues={issues} />}
           {view === "team"    && <TeamView     issues={issues} />}
+          {view === "settings" && <AdminUsers />}
         </main>
       </div>
 

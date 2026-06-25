@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useAuth } from "./lib/auth.tsx";
+import { useState, useRef, useEffect } from "react";
+import { useAuth, API_URL } from "./lib/auth.tsx";
 import { Login } from "./components/Login.tsx";
 import { AdminUsers } from "./components/AdminUsers.tsx";
 import {
@@ -812,32 +812,82 @@ function ReportsView({ issues }: { issues: Issue[] }) {
 
 // ── Team View ─────────────────────────────────────────────────────────────────
 
+function stringToColor(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue} 70% 45%)`;
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+interface TeamMember {
+  id: number;
+  email: string;
+  name: string;
+  role_name: string;
+}
+
 function TeamView({ issues }: { issues: Issue[] }) {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("tf_token") || "";
+
+  useEffect(() => {
+    fetch(`${API_URL || ""}/api/team`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => setMembers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MEMBERS.map((m) => {
-          const memberIssues = issues.filter((i) => i.assigneeId === m.id);
-          const open   = memberIssues.filter((i) => i.status !== "done");
-          const done   = memberIssues.filter((i) => i.status === "done");
+        {members.map((m) => {
+          const memberIssues = issues.filter((i) => i.assigneeId === String(m.id));
+          const open = memberIssues.filter((i) => i.status !== "done");
+          const done = memberIssues.filter((i) => i.status === "done");
           const inProg = memberIssues.filter((i) => i.status === "in-progress");
+          const color = stringToColor(m.name);
           return (
             <div key={m.id} className="bg-card border border-border rounded p-5 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold font-mono"
-                  style={{ backgroundColor: m.color }}>
-                  {m.initials}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold font-mono"
+                  style={{ backgroundColor: color }}
+                >
+                  {initials(m.name)}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{m.name}</p>
-                  <p className="text-xs text-muted-foreground">{m.role}</p>
+                  <p className="text-xs text-muted-foreground">{m.role_name}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
-                  { label: "Open",      value: open.length,    color: "text-blue-600"  },
-                  { label: "Active",    value: inProg.length,  color: "text-amber-600" },
-                  { label: "Done",      value: done.length,    color: "text-green-600" },
+                  { label: "Open", value: open.length, color: "text-blue-600" },
+                  { label: "Active", value: inProg.length, color: "text-amber-600" },
+                  { label: "Done", value: done.length, color: "text-green-600" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="bg-secondary/50 rounded p-2 text-center">
                     <p className={`text-lg font-bold font-mono ${color}`}>{value}</p>
@@ -862,6 +912,9 @@ function TeamView({ issues }: { issues: Issue[] }) {
           );
         })}
       </div>
+      {members.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center mt-10">No team members found.</p>
+      )}
     </div>
   );
 }

@@ -114,6 +114,15 @@ app.get('/api/users', authenticate, requireAdmin, async (req, res) => {
   res.json(users);
 });
 
+// Public team list for any authenticated user
+app.get('/api/team', authenticate, async (req, res) => {
+  const users = await all(
+    `SELECT users.id, users.email, users.name, roles.name as role_name
+     FROM users JOIN roles ON users.role_id = roles.id ORDER BY users.name`
+  );
+  res.json(users);
+});
+
 // Create user (admin only)
 app.post('/api/users', authenticate, requireAdmin, async (req, res) => {
   const { email, name, password, role_id } = req.body;

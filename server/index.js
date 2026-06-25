@@ -10,7 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'taskflow-secret-change-in-production';
 
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : true; // allow all in development
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 // Auth middleware

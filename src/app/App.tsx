@@ -54,46 +54,17 @@ const MEMBERS: Member[] = [
   { id: "u5", name: "Eva Richter",   initials: "ER", color: "#FF5630", role: "QA Engineer"        },
 ];
 
-const SPRINTS: Sprint[] = [
-  { id: "s23", name: "Sprint 23", startDate: "2026-05-12", endDate: "2026-05-25", status: "completed", goal: "Complete user authentication overhaul" },
-  { id: "s24", name: "Sprint 24", startDate: "2026-05-26", endDate: "2026-06-08", status: "active",    goal: "Real-time notifications and API v2 endpoints" },
-  { id: "s25", name: "Sprint 25", startDate: "2026-06-09", endDate: "2026-06-22", status: "planned",   goal: "Performance optimization and dashboard v2" },
-];
+const SPRINTS: Sprint[] = [];
 
-const INIT_ISSUES: Issue[] = [
-  { id: "PM-47", title: "Fix OAuth2 token refresh race condition", description: "When multiple requests fire simultaneously, token refresh creates duplicate session entries. Implement mutex locking around the refresh call using Redis distributed locks to handle multi-pod deployments.", status: "in-progress", priority: "critical", type: "bug",     assigneeId: "u3", reporterId: "u5", sprint: "s24", storyPoints: 5,  labels: ["auth", "backend"],          createdAt: "2026-05-27", comments: [{ id: "c1", authorId: "u5", content: "Reproduced consistently with 3+ concurrent requests. Error rate ~18% on mobile Safari.", createdAt: "2026-05-28" }, { id: "c2", authorId: "u3", content: "Working on a Redis mutex implementation. Should handle multi-pod scenarios cleanly.", createdAt: "2026-05-29" }] },
-  { id: "PM-48", title: "Implement WebSocket notification service",         description: "Real-time push notifications for issue assignments, mentions, and status changes. Support reconnect with exponential backoff and message queuing during disconnects.", status: "in-progress", priority: "high",     type: "feature", assigneeId: "u2", reporterId: "u1", sprint: "s24", storyPoints: 8,  labels: ["notifications", "realtime"], createdAt: "2026-05-26", comments: [] },
-  { id: "PM-49", title: "Standardize API v2 cursor-based pagination",       description: "Replace offset-based pagination across all list endpoints. Fixes performance degradation on large datasets exceeding 10k records.", status: "in-review",   priority: "high",     type: "task",    assigneeId: "u3", reporterId: "u1", sprint: "s24", storyPoints: 3,  labels: ["api", "backend"],           createdAt: "2026-05-26", comments: [{ id: "c3", authorId: "u2", content: "LGTM from frontend. The cursor field naming matches our client SDK expectations.", createdAt: "2026-06-01" }] },
-  { id: "PM-50", title: "Multi-region deployment with Terraform",           description: "Extend infrastructure configs to support EU-West-1 and AP-Southeast-1. Update Cloudflare routing rules and health check endpoints.", status: "todo",        priority: "high",     type: "task",    assigneeId: "u4", reporterId: "u1", sprint: "s24", storyPoints: 5,  labels: ["devops", "infra"],          createdAt: "2026-05-27", comments: [] },
-  { id: "PM-51", title: "Memory leak in dashboard event listeners",         description: "Dashboard components are not removing event listeners on unmount. Performance degrades significantly after 2+ hours of use.", status: "in-review",   priority: "high",     type: "bug",     assigneeId: "u2", reporterId: "u5", sprint: "s24", storyPoints: 3,  labels: ["frontend", "performance"],  createdAt: "2026-05-28", comments: [] },
-  { id: "PM-52", title: "API v2 migration guide for external consumers",    description: "Comprehensive guide for external API consumers upgrading from v1 to v2. Include breaking changes, code examples, and deprecation timeline.", status: "done",        priority: "medium",   type: "task",    assigneeId: "u1", reporterId: "u1", sprint: "s24", storyPoints: 2,  labels: ["docs"],                     createdAt: "2026-05-26", comments: [] },
-  { id: "PM-53", title: "E2E test suite for notification flow",             description: "Playwright tests covering the full notification lifecycle: creation, delivery, read state updates, and archival.", status: "done",        priority: "medium",   type: "task",    assigneeId: "u5", reporterId: "u5", sprint: "s24", storyPoints: 3,  labels: ["testing"],                  createdAt: "2026-05-27", comments: [] },
-  { id: "PM-54", title: "Rate limiting on notification endpoints",          description: "Per-user rate limits of 100 notifications/minute with exponential backoff messaging to clients.", status: "todo",        priority: "medium",   type: "feature", assigneeId: "u3", reporterId: "u1", sprint: "s24", storyPoints: 3,  labels: ["api", "security"],          createdAt: "2026-05-29", comments: [] },
-  { id: "PM-55", title: "Dashboard performance audit and optimization",     description: "Profile and optimize dashboard load time. Target: < 1.5s TTI on throttled 3G. Use Lighthouse CI in pipeline.", status: "todo",        priority: "high",     type: "task",    assigneeId: "u2", reporterId: "u1", sprint: "s25", storyPoints: 5,  labels: ["performance", "frontend"],  createdAt: "2026-06-01", comments: [] },
-  { id: "PM-56", title: "Virtual scrolling for large issue boards",         description: "Replace full-DOM issue list with virtual scrolling to support boards with 500+ issues without performance degradation.", status: "todo",        priority: "medium",   type: "feature", assigneeId: "u2", reporterId: "u1", sprint: "s25", storyPoints: 5,  labels: ["frontend"],                 createdAt: "2026-06-02", comments: [] },
-  { id: "PM-57", title: "Add compound indexes to issues table",             description: "Missing indexes on (assignee_id, status) and (sprint_id, status) compound queries. Estimated 10x improvement.", status: "todo",        priority: "high",     type: "task",    assigneeId: "u3", reporterId: "u4", sprint: "s25", storyPoints: 2,  labels: ["backend", "db"],            createdAt: "2026-06-02", comments: [] },
-  { id: "PM-58", title: "System-wide dark mode",                            description: "Dark mode with user preference persistence. Follow OS preference by default, allow manual override stored in user settings.", status: "todo",        priority: "medium",   type: "feature", assigneeId: "u2", reporterId: "u1", sprint: null,   storyPoints: 5,  labels: ["frontend", "ux"],           createdAt: "2026-06-01", comments: [] },
-  { id: "PM-59", title: "SAML 2.0 SSO for enterprise tier",                description: "Enterprise SSO via SAML 2.0. Required for Q3 enterprise tier launch. Support Okta, Azure AD, and generic IdP configurations.", status: "todo",        priority: "high",     type: "feature", assigneeId: "u3", reporterId: "u1", sprint: null,   storyPoints: 13, labels: ["auth", "enterprise"],       createdAt: "2026-06-03", comments: [] },
-  { id: "PM-60", title: "CSV export for all report views",                  description: "Allow users to export report data as CSV for external analysis and stakeholder reporting.", status: "todo",        priority: "low",      type: "feature", assigneeId: null, reporterId: "u1", sprint: null,   storyPoints: 2,  labels: ["reports"],                  createdAt: "2026-06-04", comments: [] },
-];
+const INIT_ISSUES: Issue[] = [];
 
 const WIKI_DOCS: WikiDoc[] = [
   {
     id: "w1", title: "TaskFlow", icon: "🚀", updatedAt: "2026-06-20", authorId: "u1",
-    content: `# TaskFlow\n\nWelcome to the **TaskFlow** product wiki — your single source of truth for architecture, processes, and team knowledge.\n\n## Quick Links\n\n- Architecture Overview — System design and service topology\n- API Reference — v2 endpoint documentation  \n- Deployment Guide — Staging and production deployment\n- Team Handbook — Ways of working and norms\n\n## Current Sprint\n\n**Sprint 24** is active (May 26 – Jun 8, 2026). Focus: real-time notifications and API v2.\n\n## Getting Started\n\nClone the monorepo, run pnpm install, then pnpm dev to start all services locally via Docker Compose. See the local setup guide for environment variable requirements.`,
+    content: `# TaskFlow\n\nWelcome to the **TaskFlow** product wiki.\n\nUse this space for architecture decisions, API documentation, deployment guides and team norms.`,
     children: [
-      { id: "w2", title: "Architecture Overview", icon: "🏗️", updatedAt: "2026-06-18", authorId: "u3", content: `# Architecture Overview\n\n## System Topology\n\nTaskFlow runs as loosely coupled microservices deployed on Kubernetes (EKS).\n\n## Core Services\n\n- api-gateway (Go) — Request routing, rate limiting, auth\n- issues-svc (Go) — Issue CRUD and search\n- notifications-svc (Node.js) — WebSocket and push notifications\n- wiki-svc (Python) — Document storage and search\n- analytics-svc (Python) — Reporting and metrics aggregation\n\n## Data Layer\n\n- Primary DB: PostgreSQL 16 (RDS Multi-AZ)\n- Cache: Redis 7 (ElastiCache)\n- Search: OpenSearch 2.x\n- Queue: SQS + EventBridge\n\n## Infrastructure\n\nAll infrastructure is managed via Terraform. Environments: dev, staging, prod (eu-west-1). EU-West and AP-Southeast are coming in Sprint 24.\n\n## Repositories\n\n- taskflow/api-gateway — routing, auth, rate limiting\n- taskflow/issues-svc — issue CRUD and search\n- taskflow/notifications-svc — WebSocket and push notifications\n- taskflow/wiki-svc — document storage and search\n- taskflow/analytics-svc — reporting and metrics aggregation` },
-      {
-        id: "w3", title: "API Reference", icon: "📡", updatedAt: "2026-06-19", authorId: "u3",
-        content: `# API Reference\n\n## Base URL\n\nhttps://api.taskflow.dev/v2\n\n## Authentication\n\nAll requests require a Bearer token obtained via OAuth2 PKCE. See Authentication docs.\n\n## Pagination\n\nAll list endpoints use cursor-based pagination (see PM-49). Pass cursor from the previous response to fetch the next page. The response includes hasMore and total fields.`,
-        children: [
-          { id: "w4", title: "Authentication", icon: "🔐", updatedAt: "2026-06-15", authorId: "u3", content: `# Authentication\n\n## OAuth2 PKCE Flow\n\nTaskFlow uses OAuth2 with PKCE for all client authentication. Implicit flow is deprecated.\n\n## Token Exchange\n\nPOST /oauth/token with grant_type=authorization_code, code, code_verifier, client_id, and redirect_uri.\n\n## Token Refresh\n\nTokens expire after 1 hour. Use the refresh_token to obtain a new access token. Note the known race condition being addressed in PM-47 — do not implement token refresh without reading that ticket first.\n\n## Scopes\n\n- read:issues — Read all issues and comments\n- write:issues — Create and update issues\n- admin — Full access including user management` },
-          { id: "w5", title: "Endpoints v2", icon: "📌", updatedAt: "2026-06-19", authorId: "u3", content: `# API v2 Endpoints\n\n## Issues\n\n- GET /issues — List issues (paginated)\n- POST /issues — Create issue\n- GET /issues/:id — Get issue detail\n- PATCH /issues/:id — Update issue\n- DELETE /issues/:id — Delete issue\n- POST /issues/:id/comments — Add comment\n\n## Sprints\n\n- GET /sprints — List sprints\n- POST /sprints — Create sprint\n- POST /sprints/:id/start — Start sprint\n- POST /sprints/:id/complete — Complete sprint\n\n## Notifications\n\n- GET /notifications — List notifications (paginated)\n- PATCH /notifications/:id — Mark as read\n- DELETE /notifications/:id — Archive\n- WS /notifications/stream — WebSocket stream (see PM-48)` },
-        ],
-      },
-      { id: "w6", title: "Deployment Guide", icon: "🚢", updatedAt: "2026-06-17", authorId: "u4", content: `# Deployment Guide\n\n## Environments\n\n- Dev: dev.taskflow.internal — any feature branch\n- Staging: staging.taskflow.dev — main branch\n- Production: taskflow.dev — release tags (v*.*.*)\n\n## Deploying to Staging\n\nMerging to main triggers automatic deployment via GitHub Actions: lint → test → build → deploy → smoke tests. Takes ~8 minutes. Monitor in Grafana.\n\n## Production Release\n\n1. Create a release tag: git tag v2.4.1 && git push --tags\n2. GitHub Actions builds and pushes container images\n3. ArgoCD auto-syncs within 5 minutes\n4. Monitor error rate in Datadog for 30 minutes post-deploy\n\n## Rollback\n\nTo rollback: argocd app rollback phoenix-prod --revision <previous>` },
-      { id: "w7", title: "Sprint Retrospectives", icon: "🔄", updatedAt: "2026-06-10", authorId: "u1", content: `# Sprint Retrospectives\n\n## Sprint 23 Retro (May 25, 2026)\n\n### What went well\n\n- OAuth overhaul delivered on time with zero production incidents\n- Cross-team collaboration between frontend and backend was excellent\n- Test coverage increased from 71% to 84%\n\n### What to improve\n\n- PR review turnaround averaging 2.3 days — target is 1 day\n- Scope creep on PM-41 added 3 unplanned days\n- Stand-ups running long — switching to async Slack Mon/Wed/Fri\n\n### Action items\n\n- Bob to set up PR review rotation — due Jun 7\n- Alice to update Definition of Ready\n- Carla to document token refresh edge cases` },
-      { id: "w8", title: "Team Handbook", icon: "📖", updatedAt: "2026-06-05", authorId: "u1", content: `# Team Handbook\n\n## Ways of Working\n\nCore hours: 10:00–16:00 CET. Flexible outside these hours.\n\nCommunication: Slack-first. Use threads. DMs for sensitive topics only.\n\nMeetings: Async-first. All recurring meetings have a written agenda 24h in advance.\n\n## On-Call\n\nRotating weekly on-call, Mon→Mon. Current week: David Kim.\n\nEscalation: Slack #alerts → PagerDuty → Engineering Manager.\n\n## Code Review Guidelines\n\n- PRs should be < 400 lines changed (excluding generated files)\n- At least one approval required before merge\n- Author merges after approval\n- Use Conventional Commits: feat, fix, chore, docs\n\n## Definition of Done\n\n- Code reviewed and approved\n- Tests written and passing\n- Documentation updated (if user-facing change)\n- Deployed to staging and smoke-tested` },
+      { id: "w2", title: "Getting Started", icon: "🚀", updatedAt: "2026-06-20", authorId: "u1", content: `# Getting Started\n\n1. Clone the repository\n2. Run \`npm install\` in the root and in \`server/\`\n3. Run \`npm run server:seed\` to create the admin account\n4. Run \`npm run dev\` to start frontend and backend\n5. Open http://localhost:5173 and sign in` },
+      { id: "w3", title: "Architecture", icon: "🏗️", updatedAt: "2026-06-20", authorId: "u1", content: `# Architecture\n\n- React frontend (Vite)\n- Node.js/Express backend\n- SQLite database for users and roles` },
     ],
   },
 ];
@@ -458,8 +429,8 @@ function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
   onOpenIssue: (i: Issue) => void; onCreateIssue: (status: IssueStatus) => void;
 }) {
   const dragId = useRef<string | null>(null);
-  const activeSprint = SPRINTS.find((s) => s.status === "active")!;
-  const boardIssues = issues.filter((i) => i.sprint === activeSprint.id);
+  const activeSprint = SPRINTS.find((s) => s.status === "active");
+  const boardIssues = activeSprint ? issues.filter((i) => i.sprint === activeSprint.id) : [];
 
   const done = boardIssues.filter((i) => i.status === "done").length;
   const total = boardIssues.length;
@@ -476,19 +447,23 @@ function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <Play className="w-3.5 h-3.5 text-green-500" />
-              <span className="text-sm font-semibold text-foreground">{activeSprint.name}</span>
+              <span className="text-sm font-semibold text-foreground">{activeSprint?.name ?? "No active sprint"}</span>
             </div>
-            <span className="text-xs text-muted-foreground">{activeSprint.startDate} – {activeSprint.endDate}</span>
-            <span className="text-xs text-muted-foreground hidden md:block">· {activeSprint.goal}</span>
+            {activeSprint && <span className="text-xs text-muted-foreground">{activeSprint.startDate} – {activeSprint.endDate}</span>}
+            {activeSprint && <span className="text-xs text-muted-foreground hidden md:block">· {activeSprint.goal}</span>}
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="font-mono">{doneSp}/{totalSp} sp</span>
-            <span>{done}/{total} issues</span>
+          {activeSprint && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="font-mono">{doneSp}/{totalSp} sp</span>
+              <span>{done}/{total} issues</span>
+            </div>
+          )}
+        </div>
+        {activeSprint && (
+          <div className="w-full h-1 bg-secondary rounded-full overflow-hidden">
+            <div className="h-full bg-green-500 transition-all rounded-full" style={{ width: `${pct}%` }} />
           </div>
-        </div>
-        <div className="w-full h-1 bg-secondary rounded-full overflow-hidden">
-          <div className="h-full bg-green-500 transition-all rounded-full" style={{ width: `${pct}%` }} />
-        </div>
+        )}
       </div>
 
       {/* Kanban columns */}
@@ -763,15 +738,26 @@ function ReportsView({ issues }: { issues: Issue[] }) {
     </div>
   );
 
+  const activeSprint = SPRINTS.find((s) => s.status === "active");
+  const activeIssues = activeSprint ? issues.filter((i) => i.sprint === activeSprint.id) : [];
+  const activeDone = activeIssues.filter((i) => i.status === "done").length;
+  const activeTotal = activeIssues.length;
+  const activeProgress = activeTotal ? Math.round((activeDone / activeTotal) * 100) : 0;
+  const activeSp = activeIssues.reduce((a, b) => a + b.storyPoints, 0);
+  const activeDoneSp = activeIssues.filter((i) => i.status === "done").reduce((a, b) => a + b.storyPoints, 0);
+  const openIssues = issues.filter((i) => i.status !== "done").length;
+
+  const hasData = issues.length > 0;
+
   return (
     <div className="flex-1 overflow-y-auto p-6">
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Active Sprint", value: "Sprint 24", sub: "Ends Jun 8", icon: <Target className="w-4 h-4 text-blue-500" /> },
-          { label: "Sprint Velocity", value: "38 sp", sub: "Sprint 23 (best)", icon: <TrendingUp className="w-4 h-4 text-green-500" /> },
-          { label: "Open Issues", value: String(issues.filter((i) => i.status !== "done").length), sub: "across all sprints", icon: <GitBranch className="w-4 h-4 text-purple-500" /> },
-          { label: "Sprint Progress", value: "25%", sub: "8 of 32 story points", icon: <CheckCircle className="w-4 h-4 text-amber-500" /> },
+          { label: "Active Sprint", value: activeSprint?.name ?? "—", sub: activeSprint ? `${activeSprint.startDate} → ${activeSprint.endDate}` : "No active sprint", icon: <Target className="w-4 h-4 text-blue-500" /> },
+          { label: "Sprint Progress", value: `${activeProgress}%`, sub: `${activeDoneSp}/${activeSp} story points`, icon: <CheckCircle className="w-4 h-4 text-amber-500" /> },
+          { label: "Open Issues", value: String(openIssues), sub: "across all sprints", icon: <GitBranch className="w-4 h-4 text-purple-500" /> },
+          { label: "Total Issues", value: String(issues.length), sub: "in dashboard", icon: <TrendingUp className="w-4 h-4 text-green-500" /> },
         ].map(({ label, value, sub, icon }) => (
           <div key={label} className="bg-card border border-border rounded p-4">
             <div className="flex items-center justify-between mb-2">{icon}<span className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</span></div>
@@ -781,65 +767,45 @@ function ReportsView({ issues }: { issues: Issue[] }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ChartCard title="Sprint Burndown" subtitle="Sprint 24 — remaining story points">
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={burndownData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
-              <Line type="monotone" dataKey="remaining" stroke="#0052cc" strokeWidth={2} dot={false} name="Remaining" />
-              <Line type="monotone" dataKey="ideal" stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="4 2" dot={false} name="Ideal" />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
+      {hasData ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ChartCard title="Issues by Type" subtitle="Distribution across all issues">
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={typeDist} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={2}>
+                  {typeDist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-wrap gap-3 justify-center mt-2">
+              {typeDist.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
+                  <span className="text-xs text-muted-foreground">{d.name} ({d.value})</span>
+                </div>
+              ))}
+            </div>
+          </ChartCard>
 
-        <ChartCard title="Team Velocity" subtitle="Committed vs completed story points per sprint">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={velocityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="sprint" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
-              <Bar dataKey="committed" fill="var(--secondary)" name="Committed" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="completed" fill="#0052cc" name="Completed" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Issues by Type" subtitle="Distribution across all sprints">
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={typeDist} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={2}>
-                {typeDist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
-            {typeDist.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
-                <span className="text-xs text-muted-foreground">{d.name} ({d.value})</span>
-              </div>
-            ))}
-          </div>
-        </ChartCard>
-
-        <ChartCard title="Workload by Assignee" subtitle="Open vs completed issues per team member">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={assigneeData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={40} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
-              <Bar dataKey="open" fill="#0052cc" name="Open" radius={[0, 2, 2, 0]} />
-              <Bar dataKey="done" fill="#36b37e" name="Done" radius={[0, 2, 2, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
+          <ChartCard title="Workload by Assignee" subtitle="Open vs completed issues per team member">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={assigneeData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={40} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "4px", fontSize: 11 }} />
+                <Bar dataKey="open" fill="#0052cc" name="Open" radius={[0, 2, 2, 0]} />
+                <Bar dataKey="done" fill="#36b37e" name="Done" radius={[0, 2, 2, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded p-10 text-center">
+          <p className="text-sm text-muted-foreground">No data yet. Create issues to see reports.</p>
+        </div>
+      )}
     </div>
   );
 }

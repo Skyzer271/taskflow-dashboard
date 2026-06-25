@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Loader2, X, Pencil, Check } from "lucide-react";
 import { useAuth, API_URL, User } from "../lib/auth";
 
 interface Role {
@@ -16,6 +16,10 @@ export function AdminUsers() {
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({ email: "", name: "", password: "", role_id: "" });
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", password: "" });
+  const [editError, setEditError] = useState("");
 
   const token = localStorage.getItem("tf_token") || "";
 
@@ -75,6 +79,58 @@ export function AdminUsers() {
     await fetchData();
   };
 
+  const handleRoleChange = async (userId: number, roleId: number) => {
+    try {
+      const res = await fetch(`${API_URL || ""}/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role_id: roleId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update role");
+      }
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const startEdit = (u: any) => {
+    setEditingId(u.id);
+    setEditForm({ name: u.name, email: u.email, password: "" });
+    setEditError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ name: "", email: "", password: "" });
+    setEditError("");
+  };
+
+  const handleEditSave = async (e: React.FormEvent, id: number) => {
+    e.preventDefault();
+    setEditError("");
+    try {
+      const body: any = { name: editForm.name, email: editForm.email };
+      if (editForm.password.trim()) body.password = editForm.password.trim();
+
+      const res = await fetch(`${API_URL || ""}/api/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update user");
+      }
+      setEditingId(null);
+      await fetchData();
+    } catch (err: any) {
+      setEditError(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -85,11 +141,11 @@ export function AdminUsers() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-foreground">User Management</h2>
-            <p className="text-sm text-muted-foreground">Create and manage accounts and their roles.</p>
+            <p className="text-sm text-muted-foreground">Create, edit and assign roles to user accounts.</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -182,28 +238,99 @@ export function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u: any) => (
-                <tr key={u.id} className="border-t border-border/60">
-                  <td className="px-4 py-3 text-foreground">{u.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
-                      {u.role_name}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {u.id !== user?.id && (
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        className="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors"
-                        title="Delete user"
+              {users.map((u: any) => {
+                const isEditing = editingId === u.id;
+                return (
+                  <tr key={u.id} className="border-t border-border/60">
+                    <td className="px-4 py-3 text-foreground align-top">
+                      {isEditing ? (
+                        <form id={`edit-form-${u.id}`} onSubmit={(e) => handleEditSave(e, u.id)} className="space-y-2">
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-foreground text-xs focus:outline-none focus:border-primary"
+                            required
+                          />
+                          <input
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-foreground text-xs focus:outline-none focus:border-primary"
+                            required
+                          />
+                          <input
+                            type="password"
+                            value={editForm.password}
+                            onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-foreground text-xs focus:outline-none focus:border-primary"
+                            placeholder="New password (optional)"
+                          />
+                          {editError && <p className="text-xs text-red-600">{editError}</p>}
+                        </form>
+                      ) : (
+                        u.name
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground align-top">
+                      {isEditing ? null : u.email}
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <select
+                        value={u.role_id}
+                        onChange={(e) => handleRoleChange(u.id, Number(e.target.value))}
+                        disabled={u.id === user?.id}
+                        className="text-xs px-2 py-1 bg-secondary border border-border rounded text-foreground focus:outline-none focus:border-primary disabled:opacity-50"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {roles.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-right align-top">
+                      <div className="flex items-center justify-end gap-1">
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="submit"
+                              form={`edit-form-${u.id}`}
+                              className="p-1.5 text-green-500 hover:bg-green-500/10 rounded transition-colors"
+                              title="Save"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="p-1.5 text-muted-foreground hover:bg-secondary rounded transition-colors"
+                              title="Cancel"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => startEdit(u)}
+                            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded transition-colors"
+                            title="Edit user"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {u.id !== user?.id && (
+                          <button
+                            onClick={() => handleDelete(u.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {users.length === 0 && (

@@ -148,6 +148,46 @@ app.post('/api/users', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// Update user (admin only)
+app.patch('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { email, name, role_id, password } = req.body;
+
+  const existing = await get(`SELECT id FROM users WHERE id = ?`, [id]);
+  if (!existing) return res.status(404).json({ error: 'User not found' });
+
+  if (role_id) {
+    const role = await get(`SELECT id FROM roles WHERE id = ?`, [role_id]);
+    if (!role) return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  const updates = [];
+  const params = [];
+  if (email !== undefined) { updates.push('email = ?'); params.push(email); }
+  if (name !== undefined) { updates.push('name = ?'); params.push(name); }
+  if (role_id !== undefined) { updates.push('role_id = ?'); params.push(role_id); }
+  if (password) {
+    const hash = await bcrypt.hash(password, 10);
+    updates.push('password_hash = ?');
+    params.push(hash);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  params.push(id);
+  try {
+    await run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    res.status(200).json({ id: Number(id), email, name, role_id });
+  } catch (err) {
+    if (err.message?.includes('UNIQUE constraint failed')) {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
+    throw err;
+  }
+});
+
 // Delete user (admin only)
 app.delete('/api/users/:id', authenticate, requireAdmin, async (req, res) => {
   const { id } = req.params;

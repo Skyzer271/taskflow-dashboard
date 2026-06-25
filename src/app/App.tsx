@@ -54,7 +54,9 @@ const MEMBERS: Member[] = [
   { id: "u5", name: "Eva Richter",   initials: "ER", color: "#FF5630", role: "QA Engineer"        },
 ];
 
-const SPRINTS: Sprint[] = [];
+const SPRINTS: Sprint[] = [
+  { id: "s1", name: "Sprint 1", startDate: "2026-06-01", endDate: "2026-06-14", status: "active", goal: "Initial sprint" },
+];
 
 const INIT_ISSUES: Issue[] = [];
 
@@ -306,27 +308,47 @@ function IssueDetail({ issue, issues, setIssues, onClose, darkMode }: {
   );
 }
 
+interface TeamMember {
+  id: number;
+  email: string;
+  name: string;
+  role_name: string;
+}
+
 // ── Create Issue Modal ────────────────────────────────────────────────────────
 
 function CreateIssueModal({ onClose, onCreate, initialStatus }: {
   onClose: () => void; onCreate: (issue: Issue) => void; initialStatus?: IssueStatus;
 }) {
+  const { user } = useAuth();
+  const defaultSprint = SPRINTS.find((s) => s.status === "active")?.id ?? (SPRINTS[0]?.id || null);
   const [form, setForm] = useState({
     title: "", description: "",
     type: "task" as IssueType, priority: "medium" as Priority,
     status: initialStatus ?? "todo" as IssueStatus,
-    assigneeId: "" as string | null, sprint: "s24" as string | null,
+    assigneeId: "" as string | null, sprint: defaultSprint,
     storyPoints: 3, labels: "",
   });
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const token = localStorage.getItem("tf_token") || "";
+
+  useEffect(() => {
+    fetch(`${API_URL || ""}/api/team`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => setMembers([]));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    const nextId = `PM-${61 + Math.floor(Math.random() * 100)}`;
+    const nextId = `PM-${100 + Math.floor(Math.random() * 900)}`;
     onCreate({
       id: nextId, title: form.title.trim(), description: form.description.trim(),
       status: form.status, priority: form.priority, type: form.type,
-      assigneeId: form.assigneeId || null, reporterId: "u1",
+      assigneeId: form.assigneeId || null, reporterId: String(user?.id ?? "u1"),
       sprint: form.sprint, storyPoints: form.storyPoints,
       labels: form.labels.split(",").map((l) => l.trim()).filter(Boolean),
       createdAt: new Date().toISOString().split("T")[0], comments: [],
@@ -385,7 +407,7 @@ function CreateIssueModal({ onClose, onCreate, initialStatus }: {
             <Field label="Assignee">
               <select value={form.assigneeId ?? ""} onChange={(e) => setForm({ ...form, assigneeId: e.target.value || null })} className={selectCls}>
                 <option value="">Unassigned</option>
-                {MEMBERS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {members.map((m) => <option key={m.id} value={String(m.id)}>{m.name}</option>)}
               </select>
             </Field>
             <Field label="Sprint">
@@ -828,13 +850,6 @@ function initials(name: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-}
-
-interface TeamMember {
-  id: number;
-  email: string;
-  name: string;
-  role_name: string;
 }
 
 function TeamView({ issues }: { issues: Issue[] }) {

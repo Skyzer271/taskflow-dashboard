@@ -919,7 +919,7 @@ function Sidebar({ view, setView, darkMode, setDarkMode }: {
         </div>
         <div>
           <p className="text-sm font-bold text-white leading-none">TaskFlow</p>
-          <p className="text-[10px] text-blue-400 leading-none mt-0.5">Platform · PM</p>
+          <p className="text-[10px] text-blue-400 leading-none mt-0.5">Project Dashboard</p>
         </div>
       </div>
 

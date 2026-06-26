@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "concurrently \"npm run server:dev\" \"vite\"",
+    "dev": "concurrently \"npm run server:dev\" \"vite --host\"",
     "preview": "vite preview",
+    "start": "npm run server",
     "server": "cd server && node index.js",
     "server:dev": "cd server && node --watch index.js",
     "server:seed": "cd server && node seed.js"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

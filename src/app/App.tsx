@@ -117,15 +117,15 @@ function Avatar({ memberId, size = "sm" }: { memberId: string | null; size?: "xs
 
 // ── IssueCard (Kanban) ────────────────────────────────────────────────────────
 
-function IssueCard({ issue, onOpen, onDragStart }: { issue: Issue; onOpen: () => void; onDragStart: () => void }) {
+function IssueCard({ issue, onOpen, onDragStart, canDrag }: { issue: Issue; onOpen: () => void; onDragStart: () => void; canDrag: boolean }) {
   const { Icon, color } = TYPE_ICONS[issue.type];
   const p = PRIORITY_CFG[issue.priority];
   return (
     <div
-      draggable
+      draggable={canDrag}
       onDragStart={onDragStart}
       onClick={onOpen}
-      className="bg-card border border-border rounded p-3 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group select-none"
+      className={`bg-card border border-border rounded p-3 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group select-none ${canDrag ? "" : "cursor-default"}`}
     >
       <div className="flex items-start gap-2 mb-2">
         <Icon className={`${color} w-3.5 h-3.5 mt-0.5 flex-shrink-0`} />
@@ -181,8 +181,19 @@ function IssueDetail({ issue, issues, setIssues, onClose, darkMode }: {
   const p = PRIORITY_CFG[issue.priority];
   const s = STATUS_CFG[issue.status];
   const sprint = getSprint(issue.sprint);
+  const { hasPermission } = useAuth();
+  const canEdit = hasPermission("edit_issue");
+  const canClose = hasPermission("close_issue");
+
   const updateStatus = (status: IssueStatus) => {
+    if (!canEdit) return;
     setIssues(issues.map((i) => i.id === issue.id ? { ...i, status } : i));
+  };
+
+  const closeIssue = () => {
+    if (!canClose) return;
+    setIssues(issues.filter((i) => i.id !== issue.id));
+    onClose();
   };
 
   const addComment = () => {
@@ -203,9 +214,19 @@ function IssueDetail({ issue, issues, setIssues, onClose, darkMode }: {
           <Icon className={`${color} w-4 h-4`} />
           <span className="font-mono text-xs text-muted-foreground">{issue.id}</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {canClose && issue.status === "done" && (
+            <button
+              onClick={closeIssue}
+              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:opacity-90 transition-opacity font-medium"
+            >
+              Close Issue
+            </button>
+          )}
+          <button onClick={onClose} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Body */}
@@ -220,7 +241,8 @@ function IssueDetail({ issue, issues, setIssues, onClose, darkMode }: {
               const active = issue.status === st;
               return (
                 <button key={st} onClick={() => updateStatus(st)}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all border ${active ? `${sc.color} ${sc.bg} border-current` : "text-muted-foreground bg-secondary border-transparent hover:border-border"}`}>
+                  disabled={!canEdit}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all border ${active ? `${sc.color} ${sc.bg} border-current` : "text-muted-foreground bg-secondary border-transparent hover:border-border"} ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}>
                   {sc.label}
                 </button>
               );
@@ -446,9 +468,10 @@ const COLUMNS: { status: IssueStatus; label: string; color: string }[] = [
   { status: "done",        label: "Done",        color: "border-t-green-500" },
 ];
 
-function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
+function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue, canEdit }: {
   issues: Issue[]; setIssues: (i: Issue[]) => void;
   onOpenIssue: (i: Issue) => void; onCreateIssue: (status: IssueStatus) => void;
+  canEdit: boolean;
 }) {
   const dragId = useRef<string | null>(null);
   const activeSprint = SPRINTS.find((s) => s.status === "active");
@@ -498,7 +521,7 @@ function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
                 className="flex flex-col flex-1 min-w-[220px] max-w-[300px]"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => {
-                  if (dragId.current) {
+                  if (canEdit && dragId.current) {
                     setIssues(issues.map((i) => i.id === dragId.current ? { ...i, status } : i));
                     dragId.current = null;
                   }
@@ -509,16 +532,18 @@ function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
                     <span className="text-xs font-semibold text-foreground">{label}</span>
                     <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{col.length}</span>
                   </div>
-                  <button onClick={() => onCreateIssue(status)}
-                    className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+                  {canEdit && (
+                    <button onClick={() => onCreateIssue(status)}
+                      className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
                 {/* Cards */}
                 <div className="flex-1 overflow-y-auto bg-secondary/30 border border-t-0 border-border rounded-b p-2 space-y-2 min-h-[200px]">
                   {col.map((issue) => (
                     <IssueCard key={issue.id} issue={issue} onOpen={() => onOpenIssue(issue)}
-                      onDragStart={() => { dragId.current = issue.id; }} />
+                      onDragStart={() => { if (canEdit) dragId.current = issue.id; }} canDrag={canEdit} />
                   ))}
                   {col.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -538,9 +563,10 @@ function BoardView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
 
 // ── Backlog View ──────────────────────────────────────────────────────────────
 
-function BacklogView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
+function BacklogView({ issues, setIssues, onOpenIssue, onCreateIssue, canEdit }: {
   issues: Issue[]; setIssues: (i: Issue[]) => void;
   onOpenIssue: (i: Issue) => void; onCreateIssue: (status?: IssueStatus) => void;
+  canEdit: boolean;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState("");
@@ -548,7 +574,7 @@ function BacklogView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
   const toggle = (id: string) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
 
   const moveToSprint = (issueId: string, sprintId: string | null) => {
-    setIssues(issues.map((i) => i.id === issueId ? { ...i, sprint: sprintId } : i));
+    if (canEdit) setIssues(issues.map((i) => i.id === issueId ? { ...i, sprint: sprintId } : i));
   };
 
   const filtered = issues.filter((i) =>
@@ -576,10 +602,12 @@ function BacklogView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter issues..."
             className="w-full pl-8 pr-3 py-1.5 text-xs bg-secondary border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary" />
         </div>
-        <button onClick={() => onCreateIssue()}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity font-medium">
-          <Plus className="w-3.5 h-3.5" /> Create Issue
-        </button>
+        {canEdit && (
+          <button onClick={() => onCreateIssue()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity font-medium">
+            <Plus className="w-3.5 h-3.5" /> Create Issue
+          </button>
+        )}
       </div>
 
       {/* Sprint sections */}
@@ -618,7 +646,8 @@ function BacklogView({ issues, setIssues, onOpenIssue, onCreateIssue }: {
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => moveToSprint(issue.id, e.target.value || null)}
                             value={issue.sprint ?? ""}
-                            className="text-[10px] px-2 py-1 bg-card border border-border rounded text-foreground cursor-pointer focus:outline-none"
+                            disabled={!canEdit}
+                            className="text-[10px] px-2 py-1 bg-card border border-border rounded text-foreground cursor-pointer focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             <option value="">Backlog</option>
                             {SPRINTS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1026,7 +1055,7 @@ const VIEW_LABELS: Record<View, string> = {
   board: "Board", backlog: "Backlog", wiki: "Wiki", reports: "Reports", team: "Team", settings: "Settings",
 };
 
-function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void }) {
+function TopBar({ view, onCreateIssue, canCreate }: { view: View; onCreateIssue: () => void; canCreate: boolean }) {
   const [search, setSearch] = useState("");
   return (
     <div className="h-12 flex-shrink-0 bg-card border-b border-border flex items-center gap-4 px-5">
@@ -1047,7 +1076,7 @@ function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void
           <Bell className="w-4 h-4" />
           <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
         </button>
-        {view !== "settings" && (
+        {view !== "settings" && canCreate && (
           <button onClick={onCreateIssue}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity font-medium">
             <Plus className="w-3.5 h-3.5" /> Create
@@ -1061,12 +1090,15 @@ function TopBar({ view, onCreateIssue }: { view: View; onCreateIssue: () => void
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasPermission } = useAuth();
   const [view, setView] = useState<View>("board");
   const [issues, setIssues] = useState<Issue[]>(INIT_ISSUES);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [createStatus, setCreateStatus] = useState<IssueStatus | null>(null);
   const [darkMode, setDarkMode] = useState(true);
+
+  const canEditIssues = user ? hasPermission("edit_issue") : false;
+  const canCreateIssue = user ? hasPermission("create_issue") : false;
 
   const openCreate = (status?: IssueStatus) => setCreateStatus(status ?? "todo");
   const closeCreate = () => setCreateStatus(null);
@@ -1096,10 +1128,10 @@ export default function App() {
       <Sidebar view={view} setView={setView} darkMode={darkMode} setDarkMode={setDarkMode} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar view={view} onCreateIssue={() => openCreate()} />
+        <TopBar view={view} onCreateIssue={() => openCreate()} canCreate={canCreateIssue} />
         <main className="flex-1 overflow-hidden flex flex-col">
-          {view === "board"   && <BoardView   issues={issues} setIssues={setIssues} onOpenIssue={setSelectedIssue} onCreateIssue={openCreate} />}
-          {view === "backlog" && <BacklogView  issues={issues} setIssues={setIssues} onOpenIssue={setSelectedIssue} onCreateIssue={openCreate} />}
+          {view === "board"   && <BoardView   issues={issues} setIssues={setIssues} onOpenIssue={setSelectedIssue} onCreateIssue={openCreate} canEdit={canEditIssues} />}
+          {view === "backlog" && <BacklogView  issues={issues} setIssues={setIssues} onOpenIssue={setSelectedIssue} onCreateIssue={openCreate} canEdit={canEditIssues} />}
           {view === "wiki"    && <WikiView />}
           {view === "reports" && <ReportsView  issues={issues} />}
           {view === "team"    && <TeamView     issues={issues} />}

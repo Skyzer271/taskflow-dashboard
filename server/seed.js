@@ -5,24 +5,25 @@ async function seed() {
   await initSchema();
 
   // Default roles
+  const adminPermissions = JSON.stringify(['board', 'backlog', 'wiki', 'reports', 'team', 'settings', 'manage_users', 'create_issue', 'edit_issue', 'delete_issue', 'close_issue', 'move_issue']);
+  const userPermissions = JSON.stringify(['board', 'wiki', 'team', 'create_issue']);
+
   const adminRole = await get(`SELECT id FROM roles WHERE name = ?`, ['admin']);
   let adminRoleId = adminRole?.id;
   if (!adminRoleId) {
-    const result = await run(
-      `INSERT INTO roles (name, permissions) VALUES (?, ?)`,
-      ['admin', JSON.stringify(['board', 'backlog', 'wiki', 'reports', 'team', 'settings', 'manage_users'])]
-    );
+    const result = await run(`INSERT INTO roles (name, permissions) VALUES (?, ?)`, ['admin', adminPermissions]);
     adminRoleId = result.id;
+  } else {
+    await run(`UPDATE roles SET permissions = ? WHERE id = ?`, [adminPermissions, adminRoleId]);
   }
 
   const userRole = await get(`SELECT id FROM roles WHERE name = ?`, ['user']);
   let userRoleId = userRole?.id;
   if (!userRoleId) {
-    const result = await run(
-      `INSERT INTO roles (name, permissions) VALUES (?, ?)`,
-      ['user', JSON.stringify(['board', 'wiki', 'team'])]
-    );
+    const result = await run(`INSERT INTO roles (name, permissions) VALUES (?, ?)`, ['user', userPermissions]);
     userRoleId = result.id;
+  } else {
+    await run(`UPDATE roles SET permissions = ? WHERE id = ?`, [userPermissions, userRoleId]);
   }
 
   // Default admin account

@@ -1,0 +1,36 @@
+# Render Blueprint for TaskFlow Dashboard
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: taskflow-dashboard
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build && npm run server:seed
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_PATH
+        value: /data/taskflow.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@taskflow.local
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: ALLOWED_ORIGINS
+        value: ""
+    # Persistent disk for SQLite.
+    # Note: Render Disks require a paid instance. On the free plan the disk
+    # section is ignored and the database lives in the ephemeral filesystem
+    # (data is reset on every deploy/restart). Remove this section if you want
+    # to stay on the free plan, or upgrade your service to keep data persistent.
+    disk:
+      name: taskflow-data
+      mountPath: /data
+      sizeGB: 1

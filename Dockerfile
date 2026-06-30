@@ -13,9 +13,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Remove dev dependencies to keep the image small
-RUN npm prune --omit=dev
-
 # Ensure the data directory exists for the SQLite volume mount
 RUN mkdir -p /data
 

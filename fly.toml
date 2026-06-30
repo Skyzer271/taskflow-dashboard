@@ -1,9 +1,7 @@
 # Fly.io configuration for TaskFlow Dashboard
 # https://fly.io/docs/reference/configuration/
 
-# Change this if the name is already taken on Fly.io.
-# Run: flyctl apps list
-app = 'taskflow-dashboard'
+app = 'taskflow-dashboard-zpydvq'
 primary_region = 'fra'
 
 [build]

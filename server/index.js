@@ -214,7 +214,7 @@ async function start() {
   const distPath = path.join(__dirname, '..', 'dist');
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('/*', (req, res) => {
       if (req.url.startsWith('/api')) return res.status(404).send('Not found');
       res.sendFile(path.join(distPath, 'index.html'));
     });

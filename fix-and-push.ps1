@@ -26,7 +26,10 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host "Schritt 3: Commit erstellen..." -ForegroundColor Cyan
 git commit -m "fix: regenerate lock file and require Node 22"
 
-Write-Host "Schritt 4: Zu GitHub pushen..." -ForegroundColor Cyan
+Write-Host "Schritt 4: Neueste Aenderungen von GitHub holen..." -ForegroundColor Cyan
+git pull origin main
+
+Write-Host "Schritt 5: Zu GitHub pushen..." -ForegroundColor Cyan
 git push origin main
 
 Write-Host "`nFertig! GitHub Actions sollte jetzt laufen." -ForegroundColor Green

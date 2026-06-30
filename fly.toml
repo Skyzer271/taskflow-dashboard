@@ -1,20 +1,12 @@
-# Fly.io configuration for TaskFlow Dashboard
-# https://fly.io/docs/reference/configuration/
+# fly.toml app configuration file generated for taskflow-dashboard-zpydvq on 2026-06-30T05:08:48Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-# Change this if the name is already taken on Fly.io.
-# Run: flyctl apps list
-app = 'taskflow-dashboard'
+app = 'taskflow-dashboard-zpydvq'
 primary_region = 'fra'
 
 [build]
-
-[http_service]
-  internal_port = 3001
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
 
 [[mounts]]
   source = 'taskflow_data'
@@ -22,7 +14,16 @@ primary_region = 'fra'
   initial_size = '1gb'
   processes = ['app']
 
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
 [[vm]]
+  memory = '256mb'
   cpu_kind = 'shared'
   cpus = 1
-  memory = '256mb'
+  memory_mb = 256

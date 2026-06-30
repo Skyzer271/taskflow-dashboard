@@ -6,7 +6,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install all dependencies (dev deps are needed for the Vite build)
-COPY package.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy source and build the frontend
